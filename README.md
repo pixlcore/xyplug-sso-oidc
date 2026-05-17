@@ -1,6 +1,6 @@
 # xyOps OIDC SSO Plugin
 
-`xyplug-sso-oidc` is a custom SSO command plugin for `xyOps`.
+`xyplug-sso-oidc` is a custom SSO command plugin for [xyOps](https://xyops.io).
 
 It lets xyOps perform a direct OpenID Connect (OIDC) login flow without placing OAuth2-Proxy, Authentik, AWS ALB, or another trusted-header proxy in front of it. The plugin redirects the browser to your identity provider, handles the callback, validates the OIDC tokens, fetches user profile data, and emits trusted headers back to xyOps.
 
