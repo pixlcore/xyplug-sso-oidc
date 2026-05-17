@@ -1,0 +1,42 @@
+{
+	"name": "@pixlcore/xyplug-sso-oidc",
+	"version": "1.0.0",
+	"description": "A xyOps SSO Plugin for authenticating users via generic OIDC.",
+	"author": "Joseph Huckaby <jhuckaby@pixlcore.com>",
+	"license": "MIT",
+	"main": "index.js",
+	"homepage": "https://github.com/pixlcore/xyplug-sso-oidc",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/pixlcore/xyplug-sso-oidc"
+	},
+	"bugs": {
+		"url": "https://github.com/pixlcore/xyplug-sso-oidc/issues"
+	},
+	"bin": {
+		"xyplug-sso-oidc": "index.js"
+	},
+	"keywords": [
+		"xyops",
+		"sso",
+		"oidc",
+		"jwt"
+	],
+	"files": [
+		"index.js",
+		"README.md",
+		"test.js"
+	],
+	"scripts": {
+		"test": "node --check index.js && node test.js"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"dependencies": {
+		"jose": "^6.2.3"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}
