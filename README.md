@@ -651,6 +651,97 @@ So a minimal Cognito `oidc` block looks like this:
 
 For Cognito, the `issuer` is the User Pool issuer, while `domain` is the Hosted UI domain. Those are deliberately separate in the config.
 
+### SAML via SSOReady
+
+If your customer or company requires SAML, you can use [SSOReady](https://ssoready.com/) as a SAML-to-OIDC bridge. SSOReady handles the SAML side of the integration, and this plugin talks to SSOReady as a generic OIDC provider.
+
+This is useful because xyOps does not need to speak SAML directly. The flow becomes:
+
+1. xyOps launches this plugin.
+2. The plugin redirects the user to SSOReady's OAuth/OIDC authorization endpoint.
+3. SSOReady redirects the user into the configured SAML IdP.
+4. The SAML IdP authenticates the user and sends the SAML response back to SSOReady.
+5. SSOReady returns an OIDC authorization code to xyOps.
+6. This plugin exchanges the code, validates the ID token, and emits trusted headers for xyOps.
+
+SSOReady setup tips:
+
+- Create a SSOReady environment.
+- Create an Organization in SSOReady.
+- Set or copy the Organization's `organization_external_id`, for example `acme`.
+- Configure your external SAML IdP connection inside that Organization.
+- Create a **SAML OAuth Client** in SSOReady.
+- Copy the SAML OAuth Client ID. It usually looks like `saml_oauth_client_...`.
+- Copy the SAML OAuth Client Secret. It usually looks like `ssoready_oauth_client_secret_...`.
+- Add your xyOps Base App URL to the SSOReady **OAuth Redirect URI** field. Example: `https://xyops.yourcompany.com`.
+- For this plugin, the callback URL is xyOps `base_app_url` exactly, with no path.
+
+Unlike most OIDC providers, SSOReady needs an organization selector on the authorization URL:
+
+```text
+organization_external_id=acme
+```
+
+This plugin adds that using `oidc.auth_params`.
+
+SSOReady endpoints:
+
+| Setting | Value |
+|---------|-------|
+| Issuer | `https://auth.ssoready.com/v1/oauth` |
+| Authorization endpoint | `https://auth.ssoready.com/v1/oauth/authorize` |
+| Token endpoint | `https://auth.ssoready.com/v1/oauth/token` |
+| JWKS URI | `https://auth.ssoready.com/v1/oauth/jwks` |
+
+#### SSOReady References
+
+- [SSOReady](https://ssoready.com/)
+- [SSOReady self-hosting](https://ssoready.com/docs/self-hosting-ssoready)
+
+#### SSOReady Example
+
+```json
+{
+	"enabled": true,
+	"whitelist": false,
+	"header_map": {
+		"username": "x-forwarded-user",
+		"full_name": "x-forwarded-name",
+		"email": "x-forwarded-email",
+		"groups": "x-forwarded-groups"
+	},
+	"cleanup_username": true,
+	"cleanup_full_name": true,
+	"group_role_map": {},
+	"group_privilege_map": {},
+	"command": "npx -y @pixlcore/xyplug-sso-oidc@1.0.0",
+	"oidc": {
+		"discovery": false,
+		"issuer": "https://auth.ssoready.com/v1/oauth",
+		"authorization_endpoint": "https://auth.ssoready.com/v1/oauth/authorize",
+		"token_endpoint": "https://auth.ssoready.com/v1/oauth/token",
+		"jwks_uri": "https://auth.ssoready.com/v1/oauth/jwks",
+		"client_id": "YOUR_SSOREADY_SAML_OAUTH_CLIENT_ID",
+		"client_secret": "YOUR_SSOREADY_SAML_OAUTH_CLIENT_SECRET",
+		"state_secret": "GENERATE_A_LONG_RANDOM_SECRET",
+		"scope": "openid profile email",
+		"auth_params": {
+			"organization_external_id": "acme"
+		},
+		"claim_map": {
+			"username": ["email", "sub"],
+			"full_name": ["name", "email", "sub"],
+			"email": ["email", "sub"],
+			"groups": ["groups", "roles"]
+		}
+	}
+}
+```
+
+For many SAML IdPs, the most stable user identifier may appear in `sub`, and the email may or may not also appear in `email`. The example above falls back to `sub` so xyOps can still create a user if SSOReady does not receive a dedicated email attribute from the SAML IdP.
+
+If you need groups, make sure the upstream SAML IdP sends group or role attributes to SSOReady, and verify the resulting ID token claims before configuring xyOps group mappings.
+
 ## Header map recommendations
 
 Recommended header map:
