@@ -50,7 +50,7 @@ Recommended command in `sso.json`:
 If you prefer, you can preinstall the package globally using `npm i -g @pixlcore/xyplug-sso-oidc@1.0.0` and then execute it directly from xyOps:
 
 ```json
-"command": "/usr/bin/xyplug-sso-oidc"
+"command": "/usr/local/bin/xyplug-sso-oidc"
 ```
 
 ## SSO Configuration
