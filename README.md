@@ -542,6 +542,119 @@ Entra setup tips:
 
 Entra often includes `preferred_username` even when `email` is absent, especially for work accounts. The sample above uses `preferred_username` as a fallback for both username and email so xyOps can still create the local SSO user.
 
+### Keycloak
+
+Keycloak is a full identity provider and access management server. For this plugin, configure a normal OpenID Connect client in the realm that contains your users.
+
+Keycloak's issuer is built from your public Keycloak base URL and realm name:
+
+```text
+https://keycloak.yourcompany.com/realms/YOUR_REALM
+```
+
+You can verify the issuer and all endpoints by opening the realm discovery document:
+
+```text
+https://keycloak.yourcompany.com/realms/YOUR_REALM/.well-known/openid-configuration
+```
+
+If your Keycloak is older or deployed under an `/auth` context path, the URL may look like this instead:
+
+```text
+https://keycloak.yourcompany.com/auth/realms/YOUR_REALM
+```
+
+Use the `issuer` value from the discovery JSON if you are unsure.
+
+Keycloak setup tips:
+
+- Realm: create or choose the realm that contains your xyOps users.
+- Client type: create an **OpenID Connect** client.
+- Client ID: choose a stable ID such as `xyops`.
+- Client authentication: enable it. This makes the client confidential and gives you a client secret.
+- Standard flow: enable it. This is Keycloak's authorization code flow.
+- Direct access grants: disable it unless you explicitly need password-grant style logins elsewhere.
+- Implicit flow: disable it. This plugin does not need tokens returned directly through the browser.
+- Service accounts: disable it. This plugin logs users in, not machines.
+- Valid redirect URIs: add your xyOps Base App URL exactly, with no path. Example: `https://xyops.yourcompany.com`.
+- Web origins: usually not needed for this plugin because the browser is not calling Keycloak from JavaScript. If Keycloak requires a value, use your xyOps origin, for example `https://xyops.yourcompany.com`.
+- Credentials: copy the client secret from the client's **Credentials** tab.
+- Hostname/proxy setup: make sure Keycloak's public frontend URL is stable and matches the `issuer` returned by discovery. Token validation will fail if Keycloak advertises an internal hostname but xyOps is configured with the public hostname.
+
+#### Keycloak Groups and Roles
+
+Start with basic login first:
+
+```json
+"scope": "openid profile email"
+```
+
+Keycloak usually includes profile claims such as `preferred_username`, `name`, and `email` when the standard `profile` and `email` client scopes are assigned to the client.
+
+If you want xyOps role or privilege mapping, you have a few options:
+
+- Groups: add a **Group Membership** protocol mapper to the client or a client scope, and emit it as a claim named `groups`.
+- Groups: decide whether to enable full group path. Full paths look like `/engineering/platform`; simple names look like `platform`.
+- Realm roles: Keycloak commonly emits realm roles under `realm_access.roles`.
+- Client roles: Keycloak commonly emits client roles under `resource_access.CLIENT_ID.roles`.
+- Evaluate: use the Keycloak client scopes **Evaluate** tab to preview the ID token, access token, and UserInfo claims for a test user.
+
+If you map roles instead of groups, point `claim_map.groups` at the role claim you want xyOps to treat as external groups. For example, realm roles can be mapped like this:
+
+```json
+"groups": "realm_access.roles"
+```
+
+For a dedicated groups claim, keep the normal mapping:
+
+```json
+"groups": "groups"
+```
+
+#### Keycloak References
+
+- [Keycloak OIDC endpoints](https://www.keycloak.org/securing-apps/oidc-layers)
+- [Keycloak server administration guide](https://www.keycloak.org/docs/latest/server_admin/)
+
+#### Keycloak Example
+
+```json
+{
+	"enabled": true,
+	"whitelist": false,
+	"header_map": {
+		"username": "x-forwarded-user",
+		"full_name": "x-forwarded-name",
+		"email": "x-forwarded-email",
+		"groups": "x-forwarded-groups"
+	},
+	"cleanup_username": false,
+	"cleanup_full_name": false,
+	"group_role_map": {},
+	"group_privilege_map": {},
+	"command": "npx -y @pixlcore/xyplug-sso-oidc@1.0.0",
+	"oidc": {
+		"issuer": "https://keycloak.yourcompany.com/realms/xyops",
+		"client_id": "xyops",
+		"client_secret": "YOUR_KEYCLOAK_CLIENT_SECRET",
+		"state_secret": "GENERATE_A_LONG_RANDOM_SECRET",
+		"scope": "openid profile email",
+		"claim_map": {
+			"username": ["preferred_username", "email", "sub"],
+			"full_name": ["name", "preferred_username", "email"],
+			"email": ["email", "preferred_username"],
+			"groups": ["groups", "realm_access.roles"]
+		}
+	}
+}
+```
+
+If your Keycloak token endpoint rejects HTTP Basic client authentication, add this to the `oidc` block:
+
+```json
+"token_endpoint_auth_method": "client_secret_post"
+```
+
 ### AWS Cognito Hosted UI
 
 Create or edit a Cognito User Pool app client with Hosted UI or Managed Login enabled.
