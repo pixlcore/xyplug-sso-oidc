@@ -7,7 +7,7 @@ It lets xyOps perform a direct OpenID Connect (OIDC) login flow without placing 
 Please read the [xyOps SSO](https://docs.xyops.io/sso) documentation before using this plugin.
 
 > [!IMPORTANT]
-> This feature requires xyOps v1.0.57 or newer.
+> This plugin requires xyOps v1.0.57 or newer.
 
 ## Table of Contents
 
